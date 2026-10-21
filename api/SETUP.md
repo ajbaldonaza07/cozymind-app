@@ -48,3 +48,20 @@ mood check-ins and the journal.
 - **"Your hosting service did not return the expected API response."** → `api.php` isn't at
   the URL above, or the site is suspended/inactive.
 - **"Please sign in again."** → session expired; log in again.
+
+## Per-file endpoints (new structure)
+`api.php?action=...` still works for the Android app. The same features are also available as
+separate files (5 APIs per module), shared setup lives in `includes/bootstrap.php`:
+
+| Module | Files |
+|---|---|
+| authentication | `login.php`, `register.php`, `logout.php` |
+| users | `get-all.php`, `create.php`, `view.php`, `update.php`, `delete.php` |
+| moods | `get-all.php`, `create.php`, `view.php`, `update.php`, `delete.php` |
+| journals | `get-all.php`, `create.php`, `view.php`, `update.php`, `delete.php` |
+
+Upload the `authentication/`, `users/`, `moods/`, `journals/`, `includes/` folders and `health.php`
+next to `api.php`. Import `Cozymind-API-v2.postman_collection.json` into Postman.
+
+`users/get-all`, `users/create` need an admin account. Make your test user an admin in phpMyAdmin:
+`UPDATE users SET is_admin = 1 WHERE username = 'testuser';`

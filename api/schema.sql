@@ -36,3 +36,31 @@ CREATE TABLE IF NOT EXISTS mood_trackers (
     KEY idx_moods_user (user_id, datetime_mood),
     CONSTRAINT fk_moods_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS goals (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id      INT UNSIGNED NOT NULL,
+    title        VARCHAR(150) NOT NULL,
+    description  TEXT NULL,
+    frequency    VARCHAR(10)  NOT NULL DEFAULT 'daily',    -- daily / weekly
+    start_date   DATE         NOT NULL,
+    end_date     DATE         NULL,
+    status       VARCHAR(10)  NOT NULL DEFAULT 'active',   -- active / done / dropped
+    created_at   DATETIME     NOT NULL,
+    updated_at   DATETIME     NOT NULL,
+    KEY idx_goals_user (user_id, created_at),
+    CONSTRAINT fk_goals_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sleep_logs (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT UNSIGNED NOT NULL,
+    sleep_date  DATE         NOT NULL,
+    bed_time    TIME         NOT NULL,
+    wake_time   TIME         NOT NULL,
+    quality     TINYINT UNSIGNED NOT NULL,                 -- 1 (poor) to 5 (great)
+    notes       VARCHAR(255) NOT NULL DEFAULT '',
+    created_at  DATETIME     NOT NULL,
+    KEY idx_sleep_user (user_id, sleep_date),
+    CONSTRAINT fk_sleep_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

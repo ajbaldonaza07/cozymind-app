@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="screen_background">#FBFAF6</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="ink">#172448</color>
+    <color name="muted_ink">#6F7180</color>
+    <color name="input_stroke">#E5E3DC</color>
+    <color name="login_blue">#216CB6</color>
+    <color name="register_teal">#669794</color>
+    <color name="soft_teal">#EAF3EE</color>
+    <color name="soft_blue">#E9F1FB</color>
+    <color name="soft_peach">#FFF0E7</color>
+    <color name="soft_lilac">#F0EFFF</color>
+    <color name="soft_yellow">#FFF8D7</color>
+    <color name="soft_pink">#FDECF0</color>
+    <color name="nav_inactive">#A4A6B1</color>
+    <color name="dark_pill">#1F1F1E</color>
+</resources>

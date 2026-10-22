@@ -1,0 +1,368 @@
+{
+  "info": {
+    "name": "Cozymind API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run top to bottom. Postman keeps the PHPSESSID cookie automatically after Register/Login."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost/cozymind-api/api.php"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}?action=health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "health"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responds with JSON', () => pm.response.to.be.json);",
+              "pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}?action=register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "register"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test User\",\n  \"username\": \"testuser\",\n  \"email\": \"test@cozymind.local\",\n  \"phone_number\": \"09171234567\",\n  \"password\": \"secret123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responds with JSON', () => pm.response.to.be.json);",
+              "pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}?action=login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "login"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identity\": \"testuser\",\n  \"password\": \"secret123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responds with JSON', () => pm.response.to.be.json);",
+              "pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Save mood",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}?action=moods",
+          "host": [
+            "{{base_url}}"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "moods"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"severity\": 4\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responds with JSON', () => pm.response.to.be.json);",
+              "pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Get moods",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}?action=moods",
+          "host": [
+            "{{base_url}}"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "moods"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responds with JSON', () => pm.response.to.be.json);",
+              "pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Save journal",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}?action=journals",
+          "host": [
+            "{{base_url}}"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "journals"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"First entry\",\n  \"body\": \"Testing the Cozymind API from Postman.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responds with JSON', () => pm.response.to.be.json);",
+              "pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Get journals",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}?action=journals",
+          "host": [
+            "{{base_url}}"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "journals"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responds with JSON', () => pm.response.to.be.json);",
+              "pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}?action=logout",
+          "host": [
+            "{{base_url}}"
+          ],
+          "query": [
+            {
+              "key": "action",
+              "value": "logout"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('responds with JSON', () => pm.response.to.be.json);",
+              "pm.test('no server error', () => pm.expect(pm.response.code).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

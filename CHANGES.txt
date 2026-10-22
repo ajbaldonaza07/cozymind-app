@@ -1,0 +1,13 @@
+What was fixed in CozymindJava
+==============================
+1. BUILD CRASH: Removed app/src/main/java/com/example/cozymind/CozyMind/ — it held a second
+   copy of MainActivity.java and CozymindApi.java with the same package name, which causes
+   "Duplicate class" errors so the app can't build. (Delete that folder in your own copy too.)
+2. LAUNCH CRASH GUARD: AppDatabase now falls back to rebuilding the local database if an
+   older test install left one Room can't migrate (previously: IllegalStateException on start).
+3. NETWORK CRASH GUARD: CozymindApi turns any unexpected error into a friendly message
+   instead of crashing the background thread.
+4. MainActivity skips UI updates that arrive after the screen has closed.
+5. Login now accepts email OR username (the server supports both); hint text updated.
+
+New: cozymind-api/ — the PHP backend the app talks to (see cozymind-api/SETUP.md).

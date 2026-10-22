@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:background="@color/surface"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
+
+    <TextView
+        android:id="@+id/nav_home"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="⌂\nHome"
+        android:textColor="@color/nav_inactive"
+        android:textSize="10sp" />
+
+    <TextView
+        android:id="@+id/nav_toolkit"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="✦\nToolkit"
+        android:textColor="@color/nav_inactive"
+        android:textSize="10sp" />
+
+    <TextView
+        android:id="@+id/nav_journal"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="▤\nJournal"
+        android:textColor="@color/nav_inactive"
+        android:textSize="10sp" />
+
+    <TextView
+        android:id="@+id/nav_profile"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="◉\nProfile"
+        android:textColor="@color/nav_inactive"
+        android:textSize="10sp" />
+</LinearLayout>

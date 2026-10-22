@@ -1,0 +1,18 @@
+# Secrets
+api/config.php
+*credentials*.txt
+
+# Android / Gradle build output
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+android/captures/
+*.iml
+*.apk
+*.aab
+
+# OS
+.DS_Store
+Thumbs.db

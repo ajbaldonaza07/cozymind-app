@@ -8,7 +8,7 @@
  * Actions (?action=...):
  *   health    GET   → {"ok":true}
  *   register  POST  {name, username, email, phone_number, password} → {user}
- *   login     POST  {identity, password}  (identity = email OR username) → {user}
+ *   login     POST  {username, password}  (username = username OR email) → {user}
  *   logout    POST
  *   moods     POST  {severity 1-5}  |  GET → {moods, statistics_6h}
  *   journals  POST  {title, body}   |  GET → {journals}
@@ -179,7 +179,7 @@ switch ($action) {
     case 'login':
         if ($method !== 'POST') fail('Use POST.', 405);
         $body     = read_json_body();
-        $identity = field($body, 'identity', 190);
+        $identity = field($body, 'username', 190);
         $password = isset($body['password']) && is_string($body['password']) ? $body['password'] : '';
         if ($identity === '' || $password === '') fail('Enter your email/username and password.', 422);
 

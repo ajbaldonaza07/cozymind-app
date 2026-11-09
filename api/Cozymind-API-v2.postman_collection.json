@@ -1,12 +1,37 @@
 {
   "info": {
     "name": "Cozymind API v2 (per-file endpoints)",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run top to bottom: Register/Login first. Postman stores the PHPSESSID cookie automatically. IDs from Create/Register responses are saved into collection variables, so View/Update/Delete work without editing."
   },
   "variable": [
     {
       "key": "base_url",
       "value": "http://localhost/cozymind-app-main/api"
+    },
+    {
+      "key": "user_id",
+      "value": ""
+    },
+    {
+      "key": "new_user_id",
+      "value": ""
+    },
+    {
+      "key": "mood_id",
+      "value": ""
+    },
+    {
+      "key": "journal_id",
+      "value": ""
+    },
+    {
+      "key": "goal_id",
+      "value": ""
+    },
+    {
+      "key": "sleep_log_id",
+      "value": ""
     }
   ],
   "item": [
@@ -16,7 +41,7 @@
         "method": "GET",
         "header": [
           {
-            "key": "Content-Type",
+            "key": "Accept",
             "value": "application/json"
           }
         ],
@@ -29,7 +54,18 @@
             "health.php"
           ]
         }
-      }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "Authentication",
@@ -39,6 +75,10 @@
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -56,20 +96,38 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test User\",\n  \"username\": \"testuser\",\n  \"email\": \"test@cozymind.local\",\n  \"phone_number\": \"09123456789\",\n  \"password\": \"secret123\"\n}",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"username\": \"testuser\",\n  \"email\": \"test@cozymind.local\",\n  \"phone_number\": \"09171234567\",\n  \"password\": \"secret123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
+            },
+            "description": "201 on success (409 if already registered - then use Login). Logs you in; Postman keeps the PHPSESSID cookie."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [201, 409]', function () { pm.expect([201, 409]).to.include(pm.response.code); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "if (json.user && json.user.id) { pm.collectionVariables.set('user_id', json.user && json.user.id); }"
+                ]
+              }
             }
-          }
+          ]
         },
         {
           "name": "Login",
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -87,20 +145,86 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"identity\": \"testuser\",\n  \"password\": \"secret123\"\n}",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"secret123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "if (json.user && json.user.id) { pm.collectionVariables.set('user_id', json.user && json.user.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/authentication/login.php",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "authentication",
+                "login.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Direct admin login for testing admin-only endpoints (users/create, users/get-all). Seeded by schema.sql."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "if (json.user && json.user.id) { pm.collectionVariables.set('user_id', json.user && json.user.id); }"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Logout",
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -115,8 +239,28 @@
                 "authentication",
                 "logout.php"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -124,32 +268,14 @@
       "name": "Users",
       "item": [
         {
-          "name": "Get all",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/users/get-all.php",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users",
-                "get-all.php"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Create",
+          "name": "Create (admin only)",
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -167,14 +293,61 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"New User\",\n  \"username\": \"newuser\",\n  \"email\": \"new@cozymind.local\",\n  \"phone_number\": \"09123456789\",\n  \"password\": \"secret123\"\n}",
+              "raw": "{\n  \"name\": \"New User\",\n  \"username\": \"newuser\",\n  \"email\": \"new@cozymind.local\",\n  \"phone_number\": \"09179876543\",\n  \"password\": \"secret123\",\n  \"is_admin\": 0\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
+            },
+            "description": "Needs an admin login: run Authentication > Login (admin) first (admin / admin123, seeded by schema.sql)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [201, 403, 409]', function () { pm.expect([201, 403, 409]).to.include(pm.response.code); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "if (json.user && json.user.id) { pm.collectionVariables.set('new_user_id', json.user && json.user.id); }"
+                ]
+              }
             }
-          }
+          ]
+        },
+        {
+          "name": "Get all (admin only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/get-all.php",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "get-all.php"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200, 403]', function () { pm.expect([200, 403]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "View",
@@ -182,12 +355,12 @@
             "method": "GET",
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/users/view.php?id=1",
+              "raw": "{{base_url}}/users/view.php?id={{user_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -198,17 +371,32 @@
               "query": [
                 {
                   "key": "id",
-                  "value": "1"
+                  "value": "{{user_id}}"
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update",
           "request": {
             "method": "PUT",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -226,27 +414,38 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"id\": 1,\n  \"name\": \"Test User Updated\"\n}",
+              "raw": "{\n  \"id\": \"{{user_id}}\",\n  \"name\": \"Test User Updated\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "Delete",
+          "name": "Delete (the extra user)",
           "request": {
             "method": "DELETE",
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/users/delete.php?id=2",
+              "raw": "{{base_url}}/users/delete.php?id={{new_user_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -257,11 +456,23 @@
               "query": [
                 {
                   "key": "id",
-                  "value": "2"
+                  "value": "{{new_user_id}}"
                 }
               ]
+            },
+            "description": "Deletes the user made by \"Create\". Deleting your own id also logs you out."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200, 404]', function () { pm.expect([200, 404]).to.include(pm.response.code); });"
+                ]
+              }
             }
-          }
+          ]
         }
       ]
     },
@@ -269,32 +480,14 @@
       "name": "Moods",
       "item": [
         {
-          "name": "Get all",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/moods/get-all.php",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "moods",
-                "get-all.php"
-              ]
-            }
-          }
-        },
-        {
           "name": "Create",
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -319,7 +512,53 @@
                 }
               }
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [201]', function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "if (json.mood && json.mood.id) { pm.collectionVariables.set('mood_id', json.mood && json.mood.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/moods/get-all.php",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "moods",
+                "get-all.php"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "View",
@@ -327,12 +566,12 @@
             "method": "GET",
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/moods/view.php?id=1",
+              "raw": "{{base_url}}/moods/view.php?id={{mood_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -343,17 +582,32 @@
               "query": [
                 {
                   "key": "id",
-                  "value": "1"
+                  "value": "{{mood_id}}"
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update",
           "request": {
             "method": "PUT",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -371,14 +625,25 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"id\": 1,\n  \"severity\": 5\n}",
+              "raw": "{\n  \"id\": \"{{mood_id}}\",\n  \"severity\": 5\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Delete",
@@ -386,12 +651,12 @@
             "method": "DELETE",
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/moods/delete.php?id=1",
+              "raw": "{{base_url}}/moods/delete.php?id={{mood_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -402,11 +667,22 @@
               "query": [
                 {
                   "key": "id",
-                  "value": "1"
+                  "value": "{{mood_id}}"
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -414,32 +690,14 @@
       "name": "Journals",
       "item": [
         {
-          "name": "Get all",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/journals/get-all.php",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "journals",
-                "get-all.php"
-              ]
-            }
-          }
-        },
-        {
           "name": "Create",
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -464,7 +722,53 @@
                 }
               }
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [201]', function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "if (json.journal && json.journal.id) { pm.collectionVariables.set('journal_id', json.journal && json.journal.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/journals/get-all.php",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "journals",
+                "get-all.php"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "View",
@@ -472,12 +776,12 @@
             "method": "GET",
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/journals/view.php?id=1",
+              "raw": "{{base_url}}/journals/view.php?id={{journal_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -488,17 +792,32 @@
               "query": [
                 {
                   "key": "id",
-                  "value": "1"
+                  "value": "{{journal_id}}"
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update",
           "request": {
             "method": "PUT",
             "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -516,14 +835,25 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"id\": 1,\n  \"title\": \"My day (edited)\"\n}",
+              "raw": "{\n  \"id\": \"{{journal_id}}\",\n  \"title\": \"My day (edited)\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Delete",
@@ -531,12 +861,12 @@
             "method": "DELETE",
             "header": [
               {
-                "key": "Content-Type",
+                "key": "Accept",
                 "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{base_url}}/journals/delete.php?id=1",
+              "raw": "{{base_url}}/journals/delete.php?id={{journal_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -547,11 +877,442 @@
               "query": [
                 {
                   "key": "id",
-                  "value": "1"
+                  "value": "{{journal_id}}"
                 }
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Goals",
+      "item": [
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "goals",
+                "create.php"
+              ],
+              "raw": "{{base_url}}/goals/create.php"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Journal 3x a week\",\n  \"description\": \"Write a short entry\",\n  \"frequency\": \"weekly\",\n  \"start_date\": \"2026-10-22\",\n  \"end_date\": \"2026-12-31\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [201]', function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "if (json.goal && json.goal.id) { pm.collectionVariables.set('goal_id', json.goal && json.goal.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "goals",
+                "get-all.php"
+              ],
+              "raw": "{{base_url}}/goals/get-all.php"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "View",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "goals",
+                "view.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{goal_id}}"
+                }
+              ],
+              "raw": "{{base_url}}/goals/view.php?id={{goal_id}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "goals",
+                "update.php"
+              ],
+              "raw": "{{base_url}}/goals/update.php"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{goal_id}}\",\n  \"status\": \"done\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "goals",
+                "delete.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{goal_id}}"
+                }
+              ],
+              "raw": "{{base_url}}/goals/delete.php?id={{goal_id}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sleep Logs",
+      "item": [
+        {
+          "name": "Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sleep-logs",
+                "create.php"
+              ],
+              "raw": "{{base_url}}/sleep-logs/create.php"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sleep_date\": \"2026-10-22\",\n  \"bed_time\": \"22:30\",\n  \"wake_time\": \"06:30\",\n  \"quality\": 4,\n  \"notes\": \"Woke up once\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [201]', function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "var json = {}; try { json = pm.response.json(); } catch (e) {}",
+                  "if (json.sleep_log && json.sleep_log.id) { pm.collectionVariables.set('sleep_log_id', json.sleep_log && json.sleep_log.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get all",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sleep-logs",
+                "get-all.php"
+              ],
+              "raw": "{{base_url}}/sleep-logs/get-all.php"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "View",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sleep-logs",
+                "view.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{sleep_log_id}}"
+                }
+              ],
+              "raw": "{{base_url}}/sleep-logs/view.php?id={{sleep_log_id}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sleep-logs",
+                "update.php"
+              ],
+              "raw": "{{base_url}}/sleep-logs/update.php"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{sleep_log_id}}\",\n  \"quality\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sleep-logs",
+                "delete.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{sleep_log_id}}"
+                }
+              ],
+              "raw": "{{base_url}}/sleep-logs/delete.php?id={{sleep_log_id}}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is one of [200]', function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

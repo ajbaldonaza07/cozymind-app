@@ -64,3 +64,7 @@ CREATE TABLE IF NOT EXISTS sleep_logs (
     KEY idx_sleep_user (user_id, sleep_date),
     CONSTRAINT fk_sleep_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Default admin for Postman testing (username: admin / password: admin123). Change it after testing.
+INSERT IGNORE INTO users (name, username, password, email, phone_number, is_admin, created_at, updated_at)
+VALUES ('Admin', 'admin', '$2b$10$VcS5PVxnrnpISx6WSAfPdeRLjQ40rn93dQgkDttbgPd4k3DpWnLxC', 'admin@cozymind.local', '0000000', 1, NOW(), NOW());

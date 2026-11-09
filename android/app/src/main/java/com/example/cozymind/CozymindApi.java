@@ -27,14 +27,16 @@ import javax.crypto.spec.SecretKeySpec;
 /** HTTPS client for the Cozymind API. The MySQL password remains on the server, never in the app. */
 public final class CozymindApi {
     /*
-     * Which server the app talks to. Set USE_LOCAL_SERVER = false to go back to ByetHost.
+     * Which server the app talks to. USE_LOCAL_SERVER = false uses the online server (https://cozymind.gethermedel.dev).
      *  - Android Emulator → Laragon on this PC: http://10.0.2.2/cozymind-api/api.php
      *  - Real phone on the same Wi-Fi: replace 10.0.2.2 with your PC's IPv4 address (run ipconfig).
      */
-    private static final boolean USE_LOCAL_SERVER = true;
+    private static final boolean USE_LOCAL_SERVER = false;
     private static final String LOCAL_ENDPOINT = "http://10.0.2.2/cozymind-api/api.php";
-    private static final String ONLINE_ENDPOINT = "https://baldonaza.byethost31.com/cozymind-api/api.php";
+    private static final String ONLINE_ENDPOINT = "https://cozymind.gethermedel.dev/api.php";
     private static final String ENDPOINT = USE_LOCAL_SERVER ? LOCAL_ENDPOINT : ONLINE_ENDPOINT;
+    /** Folder that holds api.php and the per-file endpoints (goals/, sleep-logs/, journals/ ...). */
+    private static final String BASE_URL = ENDPOINT.substring(0, ENDPOINT.lastIndexOf('/') + 1);
     private static final String BYETHOST_USER_AGENT =
             "Mozilla/5.0 (Linux; Android 15; Mobile) AppleWebKit/537.36 "
                     + "Chrome/132.0 Mobile Safari/537.36";
@@ -129,7 +131,8 @@ public final class CozymindApi {
 
     public List<Journal> getJournals() throws ApiException {
         try {
-            JSONArray journals = request("journals", "GET", null).optJSONArray("journals");
+            // Per-file endpoint: same data as api.php, but each entry includes its id (needed to delete).
+            JSONArray journals = requestPath("journals/get-all.php", "GET", null).optJSONArray("journals");
             List<Journal> result = new ArrayList<>();
             if (journals != null) {
                 for (int index = 0; index < journals.length(); index++) {
@@ -142,6 +145,90 @@ public final class CozymindApi {
         }
     }
 
+    public void deleteJournal(long id) throws ApiException {
+        requestPath("journals/delete.php?id=" + id, "DELETE", null);
+    }
+
+    // ---------- Goals (goals/*.php) ----------
+
+    public List<Goal> getGoals() throws ApiException {
+        try {
+            JSONArray goals = requestPath("goals/get-all.php", "GET", null).optJSONArray("goals");
+            List<Goal> result = new ArrayList<>();
+            if (goals != null) {
+                for (int index = 0; index < goals.length(); index++) {
+                    result.add(Goal.from(goals.getJSONObject(index)));
+                }
+            }
+            return result;
+        } catch (JSONException exception) {
+            throw new ApiException("Could not read the server response.", -1, exception);
+        }
+    }
+
+    public void createGoal(String title, String description, String frequency) throws ApiException {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("title", title);
+            body.put("description", description);
+            body.put("frequency", frequency);
+            requestPath("goals/create.php", "POST", body);
+        } catch (JSONException exception) {
+            throw new ApiException("Could not prepare the goal.", -1, exception);
+        }
+    }
+
+    public void setGoalStatus(long id, String status) throws ApiException {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("id", id);
+            body.put("status", status);
+            requestPath("goals/update.php", "POST", body);
+        } catch (JSONException exception) {
+            throw new ApiException("Could not update the goal.", -1, exception);
+        }
+    }
+
+    public void deleteGoal(long id) throws ApiException {
+        requestPath("goals/delete.php?id=" + id, "DELETE", null);
+    }
+
+    // ---------- Sleep logs (sleep-logs/*.php) ----------
+
+    public List<SleepLog> getSleepLogs() throws ApiException {
+        try {
+            JSONArray logs = requestPath("sleep-logs/get-all.php", "GET", null).optJSONArray("sleep_logs");
+            List<SleepLog> result = new ArrayList<>();
+            if (logs != null) {
+                for (int index = 0; index < logs.length(); index++) {
+                    result.add(SleepLog.from(logs.getJSONObject(index)));
+                }
+            }
+            return result;
+        } catch (JSONException exception) {
+            throw new ApiException("Could not read the server response.", -1, exception);
+        }
+    }
+
+    public void createSleepLog(String sleepDate, String bedTime, String wakeTime, int quality,
+                               String notes) throws ApiException {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("sleep_date", sleepDate);
+            body.put("bed_time", bedTime);
+            body.put("wake_time", wakeTime);
+            body.put("quality", quality);
+            body.put("notes", notes);
+            requestPath("sleep-logs/create.php", "POST", body);
+        } catch (JSONException exception) {
+            throw new ApiException("Could not prepare the sleep log.", -1, exception);
+        }
+    }
+
+    public void deleteSleepLog(long id) throws ApiException {
+        requestPath("sleep-logs/delete.php?id=" + id, "DELETE", null);
+    }
+
     public void clearSession() {
         hostVerified = false;
         verifiedRequestStep = 0;
@@ -149,11 +236,22 @@ public final class CozymindApi {
         sessionCookie = "";
     }
 
+    /** Calls the original single-file API: api.php?action=... */
     private JSONObject request(String action, String method, JSONObject requestBody) throws ApiException {
+        return send("api.php?action=" + action, method, requestBody);
+    }
+
+    /** Calls the per-file endpoints, e.g. "goals/get-all.php" or "journals/delete.php?id=3". */
+    private JSONObject requestPath(String path, String method, JSONObject requestBody) throws ApiException {
+        return send(path, method, requestBody);
+    }
+
+    private JSONObject send(String path, String method, JSONObject requestBody) throws ApiException {
         HttpURLConnection connection = null;
         try {
             ensureByetHostVerified();
-            URL url = new URL(ENDPOINT + "?action=" + action + "&i=" + verifiedRequestStep);
+            String separator = path.contains("?") ? "&" : "?";
+            URL url = new URL(BASE_URL + path + separator + "i=" + verifiedRequestStep);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(method);
             connection.setConnectTimeout(12_000);
@@ -191,7 +289,7 @@ public final class CozymindApi {
                     -1, exception);
         } catch (RuntimeException exception) {
             // Never let an unexpected response crash the background thread (and the app).
-            Log.e("CozymindApi", "Unexpected error during " + action, exception);
+            Log.e("CozymindApi", "Unexpected error during " + path, exception);
             throw new ApiException("Something went wrong talking to the server. Please try again.",
                     -1, exception);
         } finally {
@@ -205,7 +303,7 @@ public final class CozymindApi {
      * challenge once, store the resulting first-party cookie, then continue with JSON calls.
      */
     private void ensureByetHostVerified() throws ApiException {
-        if (hostVerified) return;
+        if (hostVerified || !ENDPOINT.contains("byethost")) return; // only ByetHost needs the cookie challenge
 
         int nextStep = -1;
         for (int attempt = 0; attempt < 3; attempt++) {
@@ -383,19 +481,71 @@ public final class CozymindApi {
     }
 
     public static final class Journal {
+        public final long id;
         public final String title;
         public final String body;
         public final String createdAt;
 
-        private Journal(String title, String body, String createdAt) {
+        private Journal(long id, String title, String body, String createdAt) {
+            this.id = id;
             this.title = title;
             this.body = body;
             this.createdAt = createdAt;
         }
 
         static Journal from(JSONObject journal) {
-            return new Journal(journal.optString("title"), journal.optString("body"),
+            return new Journal(journal.optLong("id"), journal.optString("title"), journal.optString("body"),
                     journal.optString("created_at"));
+        }
+    }
+
+    public static final class Goal {
+        public final long id;
+        public final String title;
+        public final String description;
+        public final String frequency;
+        public final String status;
+        public final String startDate;
+
+        private Goal(long id, String title, String description, String frequency, String status,
+                     String startDate) {
+            this.id = id;
+            this.title = title;
+            this.description = description;
+            this.frequency = frequency;
+            this.status = status;
+            this.startDate = startDate;
+        }
+
+        static Goal from(JSONObject goal) {
+            String description = goal.isNull("description") ? "" : goal.optString("description");
+            return new Goal(goal.optLong("id"), goal.optString("title"), description,
+                    goal.optString("frequency", "daily"), goal.optString("status", "active"),
+                    goal.optString("start_date"));
+        }
+    }
+
+    public static final class SleepLog {
+        public final long id;
+        public final String sleepDate;
+        public final String bedTime;
+        public final String wakeTime;
+        public final int quality;
+        public final String notes;
+
+        private SleepLog(long id, String sleepDate, String bedTime, String wakeTime, int quality,
+                         String notes) {
+            this.id = id;
+            this.sleepDate = sleepDate;
+            this.bedTime = bedTime;
+            this.wakeTime = wakeTime;
+            this.quality = quality;
+            this.notes = notes;
+        }
+
+        static SleepLog from(JSONObject log) {
+            return new SleepLog(log.optLong("id"), log.optString("sleep_date"), log.optString("bed_time"),
+                    log.optString("wake_time"), log.optInt("quality"), log.optString("notes"));
         }
     }
 }

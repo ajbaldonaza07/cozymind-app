@@ -1,6 +1,7 @@
 package com.example.cozymind;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Insets;
 import android.os.Bundle;
@@ -25,6 +26,7 @@ import com.example.cozymind.data.AppDatabase;
 import com.example.cozymind.data.User;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -35,7 +37,7 @@ import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
     private enum Screen {
         LOGIN, SIGN_UP, WELCOME, ONBOARDING_FOCUS, ONBOARDING_MOOD, ONBOARDING_ROUTINE,
-        DASHBOARD, TOOLKIT, MOOD, JOURNAL, BREATHE, PROFILE, COMFORT_WORDS
+        DASHBOARD, TOOLKIT, MOOD, JOURNAL, BREATHE, PROFILE, COMFORT_WORDS, GOALS, SLEEP
     }
 
     private FrameLayout screenContainer;
@@ -206,6 +208,8 @@ public class MainActivity extends Activity {
         findViewById(R.id.tool_lift_mood).setOnClickListener(view -> showMoodCheckIn());
         findViewById(R.id.tool_comfort_words).setOnClickListener(view -> showComfortWords());
         findViewById(R.id.toolkit_journal).setOnClickListener(view -> showJournal());
+        findViewById(R.id.tool_goals).setOnClickListener(view -> showGoals());
+        findViewById(R.id.tool_sleep).setOnClickListener(view -> showSleepLog());
         wireBottomNavigation(Screen.TOOLKIT);
     }
 
@@ -275,6 +279,257 @@ public class MainActivity extends Activity {
 
         findViewById(R.id.back_from_breathe).setOnClickListener(view -> handleBackNavigation());
         startButton.setOnClickListener(view -> startBreathingSession(instruction, countdown, round, startButton));
+    }
+
+    // ---------- Goals (uses the goals/*.php endpoints) ----------
+
+    private void showGoals() {
+        cancelBreathingTimer();
+        currentScreen = Screen.GOALS;
+        showScreen(R.layout.screen_goals);
+
+        EditText title = findViewById(R.id.goal_title);
+        EditText description = findViewById(R.id.goal_description);
+        RadioGroup frequency = findViewById(R.id.goal_frequency);
+        LinearLayout goals = findViewById(R.id.goals_container);
+
+        findViewById(R.id.back_from_goals).setOnClickListener(view -> showToolkit());
+        findViewById(R.id.save_goal).setOnClickListener(view -> {
+            String goalTitle = title.getText().toString().trim();
+            if (goalTitle.isEmpty()) {
+                title.setError("Give your goal a short title.");
+                title.requestFocus();
+                return;
+            }
+            String goalDescription = description.getText().toString().trim();
+            String goalFrequency = frequency.getCheckedRadioButtonId() == R.id.goal_weekly ? "weekly" : "daily";
+            databaseExecutor.execute(() -> {
+                try {
+                    api.createGoal(goalTitle, goalDescription, goalFrequency);
+                    runIfAlive(() -> {
+                        if (currentScreen != Screen.GOALS) return;
+                        title.setText("");
+                        description.setText("");
+                        Toast.makeText(this, "Goal added. One gentle step at a time.", Toast.LENGTH_SHORT).show();
+                        loadGoals(goals);
+                    });
+                } catch (CozymindApi.ApiException exception) {
+                    runIfAlive(() -> Toast.makeText(this, exception.getMessage(), Toast.LENGTH_LONG).show());
+                }
+            });
+        });
+        wireBottomNavigation(Screen.TOOLKIT);
+        loadGoals(goals);
+    }
+
+    private void loadGoals(LinearLayout container) {
+        databaseExecutor.execute(() -> {
+            try {
+                List<CozymindApi.Goal> goals = api.getGoals();
+                runIfAlive(() -> {
+                    if (currentScreen != Screen.GOALS) return;
+                    container.removeAllViews();
+                    if (goals.isEmpty()) {
+                        addEmptyMessage(container, "No goals yet. Add one small thing you'd like to do.");
+                        return;
+                    }
+                    for (CozymindApi.Goal goal : goals) {
+                        boolean done = "done".equals(goal.status);
+                        String text = (done ? "✓ " : "○ ") + goal.title
+                                + (goal.description.isEmpty() ? "" : "\n" + goal.description)
+                                + "\n" + capitalize(goal.frequency) + " · " + capitalize(goal.status)
+                                + " · since " + goal.startDate;
+                        TextView card = addHistoryCard(container, text);
+                        if (done) card.setAlpha(0.6f);
+                        card.setOnClickListener(view -> showGoalActions(goal, container));
+                    }
+                });
+            } catch (CozymindApi.ApiException exception) {
+                runIfAlive(() -> {
+                    if (currentScreen != Screen.GOALS) return;
+                    container.removeAllViews();
+                    addEmptyMessage(container, exception.getMessage());
+                });
+            }
+        });
+    }
+
+    private void showGoalActions(CozymindApi.Goal goal, LinearLayout container) {
+        boolean done = "done".equals(goal.status);
+        String[] options = {done ? "Mark as active again" : "Mark as done", "Delete goal"};
+        new AlertDialog.Builder(this)
+                .setTitle(goal.title)
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        String newStatus = done ? "active" : "done";
+                        databaseExecutor.execute(() -> {
+                            try {
+                                api.setGoalStatus(goal.id, newStatus);
+                                runIfAlive(() -> {
+                                    if (!done) Toast.makeText(this, "Well done. That counts.", Toast.LENGTH_SHORT).show();
+                                    loadGoals(container);
+                                });
+                            } catch (CozymindApi.ApiException exception) {
+                                runIfAlive(() -> Toast.makeText(this, exception.getMessage(), Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    } else {
+                        confirmDelete("Delete this goal?", goal.title,
+                                () -> api.deleteGoal(goal.id), () -> loadGoals(container));
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    // ---------- Sleep log (uses the sleep-logs/*.php endpoints) ----------
+
+    private void showSleepLog() {
+        cancelBreathingTimer();
+        currentScreen = Screen.SLEEP;
+        showScreen(R.layout.screen_sleep);
+
+        EditText date = findViewById(R.id.sleep_date);
+        EditText bedTime = findViewById(R.id.sleep_bed_time);
+        EditText wakeTime = findViewById(R.id.sleep_wake_time);
+        RadioGroup quality = findViewById(R.id.sleep_quality);
+        EditText notes = findViewById(R.id.sleep_notes);
+        LinearLayout logs = findViewById(R.id.sleep_container);
+
+        // Default to last night: yesterday's date.
+        date.setText(new SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                .format(new Date(System.currentTimeMillis() - 24L * 60 * 60 * 1000)));
+
+        findViewById(R.id.back_from_sleep).setOnClickListener(view -> showToolkit());
+        findViewById(R.id.save_sleep).setOnClickListener(view -> {
+            String sleepDate = date.getText().toString().trim();
+            String bed = bedTime.getText().toString().trim();
+            String wake = wakeTime.getText().toString().trim();
+            if (!sleepDate.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                date.setError("Use the format 2026-10-25.");
+                date.requestFocus();
+                return;
+            }
+            if (!bed.matches("([01]?\\d|2[0-3]):[0-5]\\d")) {
+                bedTime.setError("Use 24-hour time, e.g. 22:30.");
+                bedTime.requestFocus();
+                return;
+            }
+            if (!wake.matches("([01]?\\d|2[0-3]):[0-5]\\d")) {
+                wakeTime.setError("Use 24-hour time, e.g. 06:30.");
+                wakeTime.requestFocus();
+                return;
+            }
+            int sleepQuality = sleepQualityForId(quality.getCheckedRadioButtonId());
+            String sleepNotes = notes.getText().toString().trim();
+            String bedPadded = bed.length() == 4 ? "0" + bed : bed;
+            String wakePadded = wake.length() == 4 ? "0" + wake : wake;
+            databaseExecutor.execute(() -> {
+                try {
+                    api.createSleepLog(sleepDate, bedPadded, wakePadded, sleepQuality, sleepNotes);
+                    runIfAlive(() -> {
+                        if (currentScreen != Screen.SLEEP) return;
+                        bedTime.setText("");
+                        wakeTime.setText("");
+                        notes.setText("");
+                        Toast.makeText(this, "Sleep log saved. Rest well tonight.", Toast.LENGTH_SHORT).show();
+                        loadSleepLogs(logs);
+                    });
+                } catch (CozymindApi.ApiException exception) {
+                    runIfAlive(() -> Toast.makeText(this, exception.getMessage(), Toast.LENGTH_LONG).show());
+                }
+            });
+        });
+        wireBottomNavigation(Screen.TOOLKIT);
+        loadSleepLogs(logs);
+    }
+
+    private void loadSleepLogs(LinearLayout container) {
+        databaseExecutor.execute(() -> {
+            try {
+                List<CozymindApi.SleepLog> logs = api.getSleepLogs();
+                runIfAlive(() -> {
+                    if (currentScreen != Screen.SLEEP) return;
+                    container.removeAllViews();
+                    if (logs.isEmpty()) {
+                        addEmptyMessage(container, "No nights logged yet.");
+                        return;
+                    }
+                    for (CozymindApi.SleepLog log : logs) {
+                        String text = log.sleepDate + " · " + hoursSlept(log.bedTime, log.wakeTime)
+                                + "\n" + shortTime(log.bedTime) + " → " + shortTime(log.wakeTime)
+                                + " · Quality " + log.quality + " / 5"
+                                + (log.notes.isEmpty() ? "" : "\n" + log.notes);
+                        TextView card = addHistoryCard(container, text);
+                        card.setOnClickListener(view -> confirmDelete("Delete this sleep log?", log.sleepDate,
+                                () -> api.deleteSleepLog(log.id), () -> loadSleepLogs(container)));
+                    }
+                });
+            } catch (CozymindApi.ApiException exception) {
+                runIfAlive(() -> {
+                    if (currentScreen != Screen.SLEEP) return;
+                    container.removeAllViews();
+                    addEmptyMessage(container, exception.getMessage());
+                });
+            }
+        });
+    }
+
+    private int sleepQualityForId(int selectedId) {
+        if (selectedId == R.id.sleep_q1) return 1;
+        if (selectedId == R.id.sleep_q2) return 2;
+        if (selectedId == R.id.sleep_q4) return 4;
+        if (selectedId == R.id.sleep_q5) return 5;
+        return 3;
+    }
+
+    /** "22:30:00" → "22:30" */
+    private String shortTime(String time) {
+        return time != null && time.length() >= 5 ? time.substring(0, 5) : String.valueOf(time);
+    }
+
+    /** Hours between bedtime and wake time, crossing midnight if needed, e.g. "8h 0m". */
+    private String hoursSlept(String bed, String wake) {
+        try {
+            int bedMinutes = Integer.parseInt(bed.substring(0, 2)) * 60 + Integer.parseInt(bed.substring(3, 5));
+            int wakeMinutes = Integer.parseInt(wake.substring(0, 2)) * 60 + Integer.parseInt(wake.substring(3, 5));
+            int total = wakeMinutes - bedMinutes;
+            if (total <= 0) total += 24 * 60;
+            return (total / 60) + "h " + (total % 60) + "m";
+        } catch (RuntimeException exception) {
+            return "";
+        }
+    }
+
+    // ---------- shared helpers for the new screens ----------
+
+    private interface ApiCall {
+        void run() throws CozymindApi.ApiException;
+    }
+
+    /** Asks before deleting, then runs the API call in the background and refreshes the list. */
+    private void confirmDelete(String question, String detail, ApiCall deleteCall, Runnable reload) {
+        new AlertDialog.Builder(this)
+                .setTitle(question)
+                .setMessage(detail)
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Delete", (dialog, which) -> databaseExecutor.execute(() -> {
+                    try {
+                        deleteCall.run();
+                        runIfAlive(() -> {
+                            Toast.makeText(this, "Deleted.", Toast.LENGTH_SHORT).show();
+                            reload.run();
+                        });
+                    } catch (CozymindApi.ApiException exception) {
+                        runIfAlive(() -> Toast.makeText(this, exception.getMessage(), Toast.LENGTH_LONG).show());
+                    }
+                }))
+                .show();
+    }
+
+    private String capitalize(String value) {
+        if (TextUtils.isEmpty(value)) return "";
+        return value.substring(0, 1).toUpperCase(Locale.getDefault()) + value.substring(1);
     }
 
     private void attemptLogin(EditText emailField, EditText passwordField) {
@@ -454,8 +709,10 @@ public class MainActivity extends Activity {
                         return;
                     }
                     for (CozymindApi.Journal entry : journalEntries) {
-                        addHistoryCard(entries, entry.title + "\n" + entry.body + "\n"
+                        TextView card = addHistoryCard(entries, entry.title + "\n" + entry.body + "\n"
                                 + entry.createdAt + " UTC");
+                        card.setOnClickListener(view -> confirmDelete("Delete this journal entry?",
+                                entry.title, () -> api.deleteJournal(entry.id), () -> loadJournalEntries(entries)));
                     }
                 });
             } catch (CozymindApi.ApiException exception) {
@@ -527,7 +784,7 @@ public class MainActivity extends Activity {
         return "Overwhelmed";
     }
 
-    private void addHistoryCard(LinearLayout container, String text) {
+    private TextView addHistoryCard(LinearLayout container, String text) {
         TextView card = new TextView(this);
         card.setBackgroundResource(R.drawable.bg_dashboard_card);
         card.setPadding(dp(18), dp(14), dp(18), dp(14));
@@ -538,6 +795,7 @@ public class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         params.setMargins(0, 0, 0, dp(10));
         container.addView(card, params);
+        return card;
     }
 
     private void addEmptyMessage(LinearLayout container, String text) {
@@ -752,7 +1010,8 @@ public class MainActivity extends Activity {
             showOnboardingFocus();
         } else if (currentScreen == Screen.ONBOARDING_ROUTINE) {
             showOnboardingMood();
-        } else if (currentScreen == Screen.COMFORT_WORDS) {
+        } else if (currentScreen == Screen.COMFORT_WORDS || currentScreen == Screen.GOALS
+                || currentScreen == Screen.SLEEP) {
             showToolkit();
         } else {
             showDashboard(getSavedName());

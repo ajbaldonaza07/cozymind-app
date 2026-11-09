@@ -3,7 +3,7 @@ require_once __DIR__ . '/../includes/bootstrap.php';
 require_method('POST');
 
 $body     = read_json_body();
-$identity = field($body, 'identity', 190);   // email OR username
+$identity = field($body, 'username', 190);   // username (email also accepted)
 $password = isset($body['password']) && is_string($body['password']) ? $body['password'] : '';
 if ($identity === '' || $password === '') fail('Enter your email/username and password.', 422);
 

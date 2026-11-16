@@ -92,7 +92,7 @@
                     android:gravity="center"
                     android:paddingStart="13dp"
                     android:paddingEnd="13dp"
-                    android:text="♨ 365 Days Streak"
+                    android:text="🌱 Check in today to start a streak"
                     android:textColor="@color/register_teal"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -115,6 +115,9 @@
                 android:background="@drawable/bg_outline_card"
                 android:orientation="vertical">
                 <TextView
+                    android:id="@+id/profile_mood_history"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:layout_width="match_parent"
                     android:layout_height="53dp"
                     android:gravity="center_vertical"
@@ -130,6 +133,9 @@
                     android:layout_marginStart="16dp"
                     android:background="@color/input_stroke" />
                 <TextView
+                    android:id="@+id/profile_journal"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:layout_width="match_parent"
                     android:layout_height="53dp"
                     android:gravity="center_vertical"
@@ -168,13 +174,14 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="♧   Daily Reminders"
+                        android:text="🔔   Daily check-in reminder"
                         android:textColor="@color/ink"
                         android:textSize="15sp" />
                     <Switch
+                        android:id="@+id/profile_reminder_switch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:checked="true"
+                        android:checked="false"
                         android:thumbTint="@color/surface"
                         android:trackTint="@color/register_teal" />
                 </LinearLayout>
@@ -184,11 +191,15 @@
                     android:layout_marginStart="16dp"
                     android:background="@color/input_stroke" />
                 <TextView
+                    android:id="@+id/profile_reminder_time"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:layout_width="match_parent"
                     android:layout_height="53dp"
                     android:gravity="center_vertical"
                     android:paddingStart="16dp"
-                    android:text="☾   Dark Mode"
+                    android:paddingEnd="16dp"
+                    android:text="🕒   Reminder time: 8:00 PM"
                     android:textColor="@color/ink"
                     android:textSize="15sp" />
             </LinearLayout>

@@ -8,7 +8,9 @@ import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.graphics.Insets;
+import android.os.Build;
+import android.view.WindowInsets;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -30,37 +32,13 @@ import java.util.Locale;
  */
 public class CalmStartActivity extends Activity {
 
-    private static final String PREFS = "cozymind_calm_start";
-    private static final int WATER_GOAL = 8;
+    private static final int WATER_GOAL = WellnessStore.WATER_GOAL;
 
     /** Guided breathing: 4 seconds in, 2 hold, 6 out. */
     private static final long INHALE_MS = 4000;
     private static final long HOLD_MS = 2000;
     private static final long EXHALE_MS = 6000;
     private static final long GUIDED_SESSION_MS = 60_000;
-
-    private static final String[] AFFIRMATIONS = {
-            "You are allowed to rest. Growth still happens on quiet days.",
-            "This feeling is a visitor. It will not stay forever.",
-            "You are doing better than you think you are.",
-            "Small steps are still steps forward.",
-            "You deserve the same kindness you give to others.",
-            "It is okay to not have everything figured out.",
-            "Breathe. You have survived every hard day so far.",
-            "Your worth is not measured by your productivity.",
-            "You can start again at any moment of the day.",
-            "Asking for help is a sign of strength.",
-            "Be gentle with yourself. You are learning.",
-            "One thing at a time is enough.",
-            "You belong here, exactly as you are.",
-            "Progress, not perfection.",
-            "Today, you only need to do your best, whatever that looks like.",
-            "Your feelings are valid, and they matter.",
-            "Peace begins with one slow breath.",
-            "You are more than your worst day.",
-            "It is okay to say no to protect your peace.",
-            "You are worthy of care, especially your own.",
-    };
 
     private static final String[] GROUNDING_STEPS = {
             "👀  Look around and name 5 things you can SEE.",
@@ -96,6 +74,7 @@ public class CalmStartActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.screen_calm_start);
+        applySystemBarInsets(findViewById(R.id.calm_root));
 
         setUpGreeting();
         setUpBreathing();
@@ -109,6 +88,27 @@ public class CalmStartActivity extends Activity {
             overridePendingTransition(R.anim.calm_window_enter, R.anim.calm_window_exit);
             finish();
         });
+    }
+
+    /** Keeps the content below the camera/status area and above gesture navigation. */
+    private void applySystemBarInsets(View root) {
+        int baseTop = root.getPaddingTop();
+        int baseBottom = root.getPaddingBottom();
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            int top;
+            int bottom;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+                top = bars.top;
+                bottom = bars.bottom;
+            } else {
+                top = insets.getSystemWindowInsetTop();
+                bottom = insets.getSystemWindowInsetBottom();
+            }
+            view.setPadding(view.getPaddingLeft(), baseTop + top, view.getPaddingRight(), baseBottom + bottom);
+            return insets;
+        });
+        root.requestApplyInsets();
     }
 
     // ---------- Greeting ----------
@@ -240,13 +240,13 @@ public class CalmStartActivity extends Activity {
     private void setUpAffirmation() {
         affirmationView = findViewById(R.id.calm_affirmation);
         // A different affirmation each day of the year.
-        affirmationIndex = Calendar.getInstance().get(Calendar.DAY_OF_YEAR) % AFFIRMATIONS.length;
-        affirmationView.setText(AFFIRMATIONS[affirmationIndex]);
+        affirmationIndex = WellnessStore.todaysAffirmationIndex();
+        affirmationView.setText(WellnessStore.AFFIRMATIONS[affirmationIndex]);
 
         findViewById(R.id.affirmation_next).setOnClickListener(v -> {
-            affirmationIndex = (affirmationIndex + 1) % AFFIRMATIONS.length;
+            affirmationIndex = (affirmationIndex + 1) % WellnessStore.AFFIRMATIONS.length;
             affirmationView.animate().alpha(0f).setDuration(200).withEndAction(() -> {
-                affirmationView.setText(AFFIRMATIONS[affirmationIndex]);
+                affirmationView.setText(WellnessStore.AFFIRMATIONS[affirmationIndex]);
                 affirmationView.animate().alpha(1f).setDuration(300).start();
             }).start();
         });
@@ -254,22 +254,16 @@ public class CalmStartActivity extends Activity {
 
     // ---------- Water ----------
 
-    private String todayKey() {
-        return "water_" + new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().getTime());
-    }
-
     private void setUpWater() {
         waterCount = findViewById(R.id.water_count);
         waterDots = findViewById(R.id.water_dots);
         findViewById(R.id.water_plus).setOnClickListener(v -> changeWater(1));
         findViewById(R.id.water_minus).setOnClickListener(v -> changeWater(-1));
-        showWater(getSharedPreferences(PREFS, MODE_PRIVATE).getInt(todayKey(), 0));
+        showWater(WellnessStore.waterToday(this));
     }
 
     private void changeWater(int delta) {
-        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        int glasses = Math.max(0, Math.min(WATER_GOAL, prefs.getInt(todayKey(), 0) + delta));
-        prefs.edit().putInt(todayKey(), glasses).apply();
+        int glasses = WellnessStore.changeWater(this, delta);
         showWater(glasses);
         if (delta > 0 && glasses == WATER_GOAL) {
             Toast.makeText(this, "You reached your water goal today! 🎉", Toast.LENGTH_SHORT).show();

@@ -1,13 +1,23 @@
 package com.example.cozymind;
 
 import android.app.Activity;
+import android.Manifest;
 import android.app.AlertDialog;
+import android.app.TimePickerDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.content.SharedPreferences;
 import android.graphics.Insets;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Build;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.Gravity;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,7 +28,9 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RadioGroup;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +39,8 @@ import com.example.cozymind.data.User;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -51,6 +65,10 @@ public class MainActivity extends Activity {
     private boolean serverSessionActive;
     private int onboardingMoodSeverity;
     private Screen currentScreen = Screen.LOGIN;
+    private static final int REQUEST_NOTIFICATIONS = 31;
+    private int journalPromptIndex;
+    private String selectedJournalTag = "";
+    private List<CozymindApi.Journal> loadedJournals = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,7 +145,17 @@ public class MainActivity extends Activity {
         TextView greeting = findViewById(R.id.dashboard_greeting);
         greeting.setText("Welcome Back\n" + name + "!");
         TextView subtitle = findViewById(R.id.dashboard_subtitle);
-        subtitle.setText("Good morning, " + name + ".");
+        subtitle.setText(timeOfDayGreeting() + ", " + name + ".");
+        ((TextView) findViewById(R.id.dashboard_streak)).setText(WellnessStore.streakLabel(this));
+        TextView waterStatus = findViewById(R.id.dashboard_water_status);
+        showDashboardWater(waterStatus, WellnessStore.waterToday(this));
+        findViewById(R.id.dashboard_water_tile).setOnClickListener(view -> {
+            int glasses = WellnessStore.changeWater(this, 1);
+            showDashboardWater(waterStatus, glasses);
+            Toast.makeText(this, glasses >= WellnessStore.WATER_GOAL
+                    ? "Water goal reached today! 🎉" : "💧 Logged. " + glasses + " of "
+                    + WellnessStore.WATER_GOAL + " glasses.", Toast.LENGTH_SHORT).show();
+        });
         TextView profile = findViewById(R.id.dashboard_profile);
         profile.setText("♡");
         TextView dailyAffirmation = findViewById(R.id.daily_affirmation);
@@ -192,6 +220,7 @@ public class MainActivity extends Activity {
             databaseExecutor.execute(() -> {
                 try {
                     api.saveMood(selectedSeverity);
+                    WellnessStore.recordCheckInToday(this);
                 } catch (CozymindApi.ApiException ignored) {
                     // Onboarding remains usable if a check-in cannot be synced immediately.
                 }
@@ -219,8 +248,28 @@ public class MainActivity extends Activity {
         showScreen(R.layout.screen_profile);
         ((TextView) findViewById(R.id.profile_initial)).setText("♡");
         ((TextView) findViewById(R.id.profile_name)).setText(getSavedName());
-        ((TextView) findViewById(R.id.profile_subtitle)).setText("Member since today");
+        ((TextView) findViewById(R.id.profile_subtitle)).setText("Taking care of yourself, one day at a time");
+        ((TextView) findViewById(R.id.profile_streak)).setText(WellnessStore.streakLabel(this));
+        findViewById(R.id.profile_mood_history).setOnClickListener(view -> showMoodCheckIn());
+        findViewById(R.id.profile_journal).setOnClickListener(view -> showJournal());
         findViewById(R.id.profile_sign_out).setOnClickListener(view -> signOut());
+
+        Switch reminderSwitch = findViewById(R.id.profile_reminder_switch);
+        TextView reminderTime = findViewById(R.id.profile_reminder_time);
+        reminderSwitch.setChecked(WellnessStore.reminderOn(this));
+        reminderTime.setText("🕒   Reminder time: " + WellnessStore.reminderTimeLabel(this));
+        reminderSwitch.setOnCheckedChangeListener((button, on) -> {
+            if (on) askForNotificationPermission();
+            WellnessStore.setReminder(this, on, WellnessStore.reminderHour(this), WellnessStore.reminderMinute(this));
+            Toast.makeText(this, on ? "Daily reminder set for " + WellnessStore.reminderTimeLabel(this) + " 💚"
+                    : "Daily reminder turned off.", Toast.LENGTH_SHORT).show();
+        });
+        reminderTime.setOnClickListener(view -> new TimePickerDialog(this, (picker, hour, minute) -> {
+            WellnessStore.setReminder(this, true, hour, minute);
+            reminderSwitch.setChecked(true);
+            reminderTime.setText("🕒   Reminder time: " + WellnessStore.reminderTimeLabel(this));
+            askForNotificationPermission();
+        }, WellnessStore.reminderHour(this), WellnessStore.reminderMinute(this), false).show());
         wireBottomNavigation(Screen.PROFILE);
     }
 
@@ -257,12 +306,55 @@ public class MainActivity extends Activity {
         LinearLayout entries = findViewById(R.id.journal_entries_container);
         LinearLayout editor = findViewById(R.id.journal_editor);
 
-        View.OnClickListener openEditor = view -> {
+        TextView prompt = findViewById(R.id.journal_prompt);
+        EditText search = findViewById(R.id.journal_search);
+        journalPromptIndex = WellnessStore.todaysPromptIndex();
+        prompt.setText(WellnessStore.journalPrompt(journalPromptIndex));
+        findViewById(R.id.journal_prompt_next).setOnClickListener(view -> {
+            journalPromptIndex++;
+            prompt.setText(WellnessStore.journalPrompt(journalPromptIndex));
+        });
+
+        findViewById(R.id.new_journal_entry).setOnClickListener(view -> {
             editor.setVisibility(View.VISIBLE);
             title.requestFocus();
-        };
-        findViewById(R.id.new_journal_entry).setOnClickListener(openEditor);
-        findViewById(R.id.write_response).setOnClickListener(openEditor);
+        });
+        findViewById(R.id.write_response).setOnClickListener(view -> {
+            editor.setVisibility(View.VISIBLE);
+            if (title.getText().toString().trim().isEmpty()) title.setText(prompt.getText());
+            body.requestFocus();
+        });
+        findViewById(R.id.back_from_journal).setOnClickListener(view -> search.requestFocus());
+        search.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence text, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence text, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable text) {
+                renderJournalEntries(entries, text.toString());
+            }
+        });
+
+        selectedJournalTag = "";
+        int[] tagIds = {R.id.journal_tag_1, R.id.journal_tag_2, R.id.journal_tag_3,
+                R.id.journal_tag_4, R.id.journal_tag_5};
+        for (int tagId : tagIds) {
+            TextView tag = findViewById(tagId);
+            tag.setOnClickListener(view -> {
+                String emoji = tag.getText().toString();
+                selectedJournalTag = emoji.equals(selectedJournalTag) ? "" : emoji;
+                for (int otherId : tagIds) {
+                    TextView other = findViewById(otherId);
+                    other.setBackgroundResource(other.getText().toString().equals(selectedJournalTag)
+                            ? R.drawable.bg_soft_teal : R.drawable.bg_outline_button);
+                }
+            });
+        }
         findViewById(R.id.save_journal).setOnClickListener(view -> saveJournalEntry(title, body, entries));
         wireBottomNavigation(Screen.JOURNAL);
         loadJournalEntries(entries);
@@ -329,6 +421,7 @@ public class MainActivity extends Activity {
                 runIfAlive(() -> {
                     if (currentScreen != Screen.GOALS) return;
                     container.removeAllViews();
+                    showGoalProgress(goals);
                     if (goals.isEmpty()) {
                         addEmptyMessage(container, "No goals yet. Add one small thing you'd like to do.");
                         return;
@@ -366,7 +459,7 @@ public class MainActivity extends Activity {
                             try {
                                 api.setGoalStatus(goal.id, newStatus);
                                 runIfAlive(() -> {
-                                    if (!done) Toast.makeText(this, "Well done. That counts.", Toast.LENGTH_SHORT).show();
+                                    if (!done) celebrateGoal(goal.title);
                                     loadGoals(container);
                                 });
                             } catch (CozymindApi.ApiException exception) {
@@ -451,6 +544,7 @@ public class MainActivity extends Activity {
                 runIfAlive(() -> {
                     if (currentScreen != Screen.SLEEP) return;
                     container.removeAllViews();
+                    showSleepSummary(logs);
                     if (logs.isEmpty()) {
                         addEmptyMessage(container, "No nights logged yet.");
                         return;
@@ -634,7 +728,9 @@ public class MainActivity extends Activity {
                 runIfAlive(() -> {
                     if (currentScreen != Screen.MOOD) return;
                     moodOptions.clearCheck();
-                    Toast.makeText(this, moodSupportMessage(moodLabel(severity)), Toast.LENGTH_LONG).show();
+                    WellnessStore.recordCheckInToday(this);
+                    if (severity <= 2) showSupportOptions();
+                    else Toast.makeText(this, moodSupportMessage(moodLabel(severity)), Toast.LENGTH_LONG).show();
                     loadMoodHistory(history, statistics);
                 });
             } catch (CozymindApi.ApiException exception) {
@@ -652,7 +748,8 @@ public class MainActivity extends Activity {
         }
 
         String title = titleField.getText().toString().trim();
-        final String entryTitle = title.isEmpty() ? "A quiet moment" : title;
+        String baseTitle = title.isEmpty() ? "A quiet moment" : title;
+        final String entryTitle = selectedJournalTag.isEmpty() ? baseTitle : selectedJournalTag + " " + baseTitle;
         databaseExecutor.execute(() -> {
             try {
                 api.saveJournal(entryTitle, body);
@@ -681,14 +778,18 @@ public class MainActivity extends Activity {
                             "Latest 6-hour average: %.1f / 5 from %d check-ins.",
                             response.statistics.get(0).averageSeverity,
                             response.statistics.get(0).entryCount));
+                    for (CozymindApi.Mood checkIn : response.moods) {
+                        WellnessStore.mergeServerCheckIn(this, checkIn.datetimeMood);
+                    }
+                    renderMoodWeek(response.moods);
                     history.removeAllViews();
                     if (response.moods.isEmpty()) {
                         addEmptyMessage(history, "Your saved check-ins will appear here.");
                         return;
                     }
                     for (CozymindApi.Mood checkIn : response.moods) {
-                        addHistoryCard(history, moodLabel(checkIn.severity) + " · " + checkIn.severity
-                                + " / 5\n" + checkIn.datetimeMood + " UTC");
+                        addHistoryCard(history, moodEmoji(checkIn.severity) + "  " + moodLabel(checkIn.severity)
+                                + " · " + checkIn.severity + " / 5\n" + friendlyTime(checkIn.datetimeMood));
                     }
                 });
             } catch (CozymindApi.ApiException exception) {
@@ -703,17 +804,9 @@ public class MainActivity extends Activity {
                 List<CozymindApi.Journal> journalEntries = api.getJournals();
                 runIfAlive(() -> {
                     if (currentScreen != Screen.JOURNAL) return;
-                    entries.removeAllViews();
-                    if (journalEntries.isEmpty()) {
-                        addEmptyMessage(entries, "Your private journal entries will appear here.");
-                        return;
-                    }
-                    for (CozymindApi.Journal entry : journalEntries) {
-                        TextView card = addHistoryCard(entries, entry.title + "\n" + entry.body + "\n"
-                                + entry.createdAt + " UTC");
-                        card.setOnClickListener(view -> confirmDelete("Delete this journal entry?",
-                                entry.title, () -> api.deleteJournal(entry.id), () -> loadJournalEntries(entries)));
-                    }
+                    loadedJournals = journalEntries;
+                    EditText search = findViewById(R.id.journal_search);
+                    renderJournalEntries(entries, search == null ? "" : search.getText().toString());
                 });
             } catch (CozymindApi.ApiException exception) {
                 runIfAlive(() -> {
@@ -898,7 +991,275 @@ public class MainActivity extends Activity {
     }
 
     private String getDailyAffirmation() {
-        return "\"Choose me, love me, or let me handle everything else for you.\"";
+        return "\"" + WellnessStore.affirmationForToday() + "\"";
+    }
+
+    // ---------- New wellness helpers ----------
+
+    private String timeOfDayGreeting() {
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        if (hour < 5) return "Rest well tonight";
+        if (hour < 12) return "Good morning";
+        if (hour < 18) return "Good afternoon";
+        return "Good evening";
+    }
+
+    private void showDashboardWater(TextView status, int glasses) {
+        status.setText(glasses >= WellnessStore.WATER_GOAL ? "Goal reached 🎉"
+                : glasses + " of " + WellnessStore.WATER_GOAL + " · tap to log");
+    }
+
+    /** A gentle follow-up after a low or overwhelmed check-in. */
+    private void showSupportOptions() {
+        String[] options = {
+                "🌬  Try a 1-minute breathing reset",
+                "📝  Write it out in my journal",
+                "📞  Talk to someone (NCMH 1553, 24/7)"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("Thank you for checking in 💗")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) showBreathing();
+                    else if (which == 1) showJournal();
+                    else dial("1553");
+                })
+                .setNegativeButton("Not right now", null)
+                .show();
+    }
+
+    private void dial(String number) {
+        try {
+            startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + number)));
+        } catch (ActivityNotFoundException exception) {
+            Toast.makeText(this, "Please call " + number + " from your phone.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private String moodEmoji(int severity) {
+        if (severity >= 5) return "😄";
+        if (severity == 4) return "🙂";
+        if (severity == 3) return "😐";
+        if (severity == 2) return "😔";
+        return "😣";
+    }
+
+    private int moodColor(int severity) {
+        if (severity >= 5) return 0xFF7FB7A6;
+        if (severity == 4) return 0xFFFFC46B;
+        if (severity == 3) return 0xFFCFCCC4;
+        if (severity == 2) return 0xFFA79DE8;
+        return 0xFFE8787A;
+    }
+
+    /** "2026-11-15 03:10:00" (UTC) → "Sun, Nov 15 · 11:10 AM" in the phone's time zone. */
+    private String friendlyTime(String utcDateTime) {
+        Date date = WellnessStore.parseUtc(utcDateTime);
+        if (date == null) return String.valueOf(utcDateTime);
+        return new SimpleDateFormat("EEE, MMM d · h:mm a", Locale.getDefault()).format(date);
+    }
+
+    private String localDayKey(Date date) {
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(date);
+    }
+
+    /** Draws a 7-day bar chart of average mood, plus the streak and a short summary. */
+    private void renderMoodWeek(List<CozymindApi.Mood> moods) {
+        LinearLayout chart = findViewById(R.id.mood_week_chart);
+        TextView summary = findViewById(R.id.mood_week_summary);
+        TextView streak = findViewById(R.id.mood_streak);
+        if (chart == null || summary == null) return;
+        if (streak != null) streak.setText(WellnessStore.streakLabel(this));
+
+        String[] keys = new String[7];
+        String[] labels = new String[7];
+        Calendar day = Calendar.getInstance();
+        day.add(Calendar.DAY_OF_YEAR, -6);
+        SimpleDateFormat dayName = new SimpleDateFormat("EEE", Locale.getDefault());
+        for (int i = 0; i < 7; i++) {
+            keys[i] = localDayKey(day.getTime());
+            labels[i] = i == 6 ? "Today" : dayName.format(day.getTime());
+            day.add(Calendar.DAY_OF_YEAR, 1);
+        }
+
+        int[] totals = new int[7];
+        int[] counts = new int[7];
+        for (CozymindApi.Mood mood : moods) {
+            Date date = WellnessStore.parseUtc(mood.datetimeMood);
+            if (date == null) continue;
+            String key = localDayKey(date);
+            for (int i = 0; i < 7; i++) {
+                if (keys[i].equals(key)) {
+                    totals[i] += mood.severity;
+                    counts[i]++;
+                }
+            }
+        }
+
+        chart.removeAllViews();
+        int weekTotal = 0;
+        int weekCount = 0;
+        int daysLogged = 0;
+        for (int i = 0; i < 7; i++) {
+            LinearLayout column = new LinearLayout(this);
+            column.setOrientation(LinearLayout.VERTICAL);
+            column.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+
+            int average = counts[i] == 0 ? 0 : Math.round((float) totals[i] / counts[i]);
+            TextView emoji = new TextView(this);
+            emoji.setText(counts[i] == 0 ? "" : moodEmoji(average));
+            emoji.setTextSize(14);
+            emoji.setGravity(Gravity.CENTER);
+            column.addView(emoji, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+            View bar = new View(this);
+            GradientDrawable shape = new GradientDrawable();
+            shape.setCornerRadius(dp(8));
+            shape.setColor(counts[i] == 0 ? 0x33A4A6B1 : moodColor(average));
+            bar.setBackground(shape);
+            LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(
+                    dp(20), counts[i] == 0 ? dp(6) : dp(10 + average * 14));
+            barParams.topMargin = dp(2);
+            column.addView(bar, barParams);
+
+            TextView label = new TextView(this);
+            label.setText(labels[i]);
+            label.setTextSize(10);
+            label.setTextColor(getColor(i == 6 ? R.color.register_teal : R.color.muted_ink));
+            label.setGravity(Gravity.CENTER);
+            LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            labelParams.topMargin = dp(4);
+            column.addView(label, labelParams);
+
+            chart.addView(column, new LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+
+            weekTotal += totals[i];
+            weekCount += counts[i];
+            if (counts[i] > 0) daysLogged++;
+        }
+
+        if (weekCount == 0) {
+            summary.setText("No check-ins this week yet. Your first one starts the chart. 🌱");
+        } else {
+            float weekAverage = (float) weekTotal / weekCount;
+            summary.setText(String.format(Locale.getDefault(),
+                    "Average %.1f / 5 · mostly %s %s\nYou checked in on %d of the last 7 days.",
+                    weekAverage, moodLabel(Math.round(weekAverage)), moodEmoji(Math.round(weekAverage)),
+                    daysLogged));
+        }
+    }
+
+    /** Shows journal cards, filtered by the search box. */
+    private void renderJournalEntries(LinearLayout entries, String query) {
+        if (currentScreen != Screen.JOURNAL) return;
+        entries.removeAllViews();
+        if (loadedJournals.isEmpty()) {
+            addEmptyMessage(entries, "Your private journal entries will appear here.");
+            return;
+        }
+        String needle = query.trim().toLowerCase(Locale.getDefault());
+        int shown = 0;
+        for (CozymindApi.Journal entry : loadedJournals) {
+            String haystack = (entry.title + " " + entry.body).toLowerCase(Locale.getDefault());
+            if (!needle.isEmpty() && !haystack.contains(needle)) continue;
+            TextView card = addHistoryCard(entries, entry.title + "\n" + entry.body + "\n"
+                    + friendlyTime(entry.createdAt));
+            card.setOnClickListener(view -> confirmDelete("Delete this journal entry?",
+                    entry.title, () -> api.deleteJournal(entry.id), () -> loadJournalEntries(entries)));
+            shown++;
+        }
+        if (shown == 0) addEmptyMessage(entries, "No entries match \"" + query.trim() + "\".");
+    }
+
+    private void showGoalProgress(List<CozymindApi.Goal> goals) {
+        TextView summary = findViewById(R.id.goals_summary);
+        ProgressBar progress = findViewById(R.id.goals_progress);
+        if (summary == null || progress == null) return;
+        int done = 0;
+        for (CozymindApi.Goal goal : goals) if ("done".equals(goal.status)) done++;
+        int total = goals.size();
+        progress.setProgress(total == 0 ? 0 : Math.round(done * 100f / total));
+        if (total == 0) summary.setText("🎯  Add your first goal to see your progress");
+        else if (done == total) summary.setText("🌟  All " + total + " goals done. Amazing work!");
+        else summary.setText("🎯  " + done + " of " + total + " goals done · keep going");
+    }
+
+    private void celebrateGoal(String title) {
+        new AlertDialog.Builder(this)
+                .setTitle("🎉  Goal complete!")
+                .setMessage("\"" + title + "\" is done.\n\nEvery small step counts. Take a moment to feel proud of yourself. 💚")
+                .setPositiveButton("Thank you", null)
+                .show();
+    }
+
+    private int minutesSlept(String bed, String wake) {
+        try {
+            int bedMinutes = Integer.parseInt(bed.substring(0, 2)) * 60 + Integer.parseInt(bed.substring(3, 5));
+            int wakeMinutes = Integer.parseInt(wake.substring(0, 2)) * 60 + Integer.parseInt(wake.substring(3, 5));
+            int total = wakeMinutes - bedMinutes;
+            if (total <= 0) total += 24 * 60;
+            return total;
+        } catch (RuntimeException exception) {
+            return -1;
+        }
+    }
+
+    /** Weekly sleep summary with a tip based on the most recent night. */
+    private void showSleepSummary(List<CozymindApi.SleepLog> logs) {
+        TextView summary = findViewById(R.id.sleep_summary);
+        if (summary == null) return;
+        if (logs.isEmpty()) {
+            summary.setText("🌙  Log a few nights to see your weekly sleep summary.");
+            return;
+        }
+        List<CozymindApi.SleepLog> sorted = new ArrayList<>(logs);
+        sorted.sort((first, second) -> second.sleepDate.compareTo(first.sleepDate));
+        List<CozymindApi.SleepLog> recent = sorted.subList(0, Math.min(7, sorted.size()));
+
+        int minutesTotal = 0;
+        int minutesCount = 0;
+        int qualityTotal = 0;
+        for (CozymindApi.SleepLog log : recent) {
+            int minutes = minutesSlept(log.bedTime, log.wakeTime);
+            if (minutes > 0) {
+                minutesTotal += minutes;
+                minutesCount++;
+            }
+            qualityTotal += log.quality;
+        }
+        int averageMinutes = minutesCount == 0 ? 0 : minutesTotal / minutesCount;
+        float averageQuality = (float) qualityTotal / recent.size();
+        CozymindApi.SleepLog latest = recent.get(0);
+
+        String tip;
+        if (latest.quality <= 2) tip = "Last night felt restless. Try dimming screens 30 minutes before bed.";
+        else if (averageMinutes > 0 && averageMinutes < 6 * 60) tip = "You're running low on sleep. Try heading to bed 30 minutes earlier tonight.";
+        else if (averageMinutes > 10 * 60) tip = "You're sleeping long. If you still wake up tired, a short morning walk can help.";
+        else tip = "Nice rhythm! A steady bedtime helps your mood too.";
+
+        summary.setText(String.format(Locale.getDefault(),
+                "🌙  Last %d night%s\nAverage sleep: %dh %dm · Quality %.1f / 5\n\n💡 %s",
+                recent.size(), recent.size() == 1 ? "" : "s",
+                averageMinutes / 60, averageMinutes % 60, averageQuality, tip));
+    }
+
+    private void askForNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATIONS);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_NOTIFICATIONS
+                && (grantResults.length == 0 || grantResults[0] != PackageManager.PERMISSION_GRANTED)) {
+            Toast.makeText(this, "Notifications are off, so the reminder can't appear. You can allow them in Settings.",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private String getComfortWord(int seed) {

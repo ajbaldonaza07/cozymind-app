@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The breathing circle: sage centre glowing out to soft blue. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <gradient
+        android:centerColor="#8EC3B5"
+        android:endColor="#8FA8E0"
+        android:gradientRadius="80dp"
+        android:startColor="#A9D8C8"
+        android:type="radial" />
+    <stroke android:width="4dp" android:color="#80FFFFFF" />
+</shape>

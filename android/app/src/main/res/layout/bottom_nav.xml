@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="64dp"
-    android:background="@color/surface"
+    android:layout_height="66dp"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="12dp"
+    android:background="@drawable/bg_nav_bar"
+    android:elevation="6dp"
     android:gravity="center"
     android:orientation="horizontal"
     android:paddingStart="8dp"
@@ -18,7 +22,8 @@
         android:gravity="center"
         android:text="⌂\nHome"
         android:textColor="@color/nav_inactive"
-        android:textSize="10sp" />
+        android:lineSpacingExtra="2dp"
+        android:textSize="11sp" />
 
     <TextView
         android:id="@+id/nav_toolkit"
@@ -30,7 +35,8 @@
         android:gravity="center"
         android:text="✦\nToolkit"
         android:textColor="@color/nav_inactive"
-        android:textSize="10sp" />
+        android:lineSpacingExtra="2dp"
+        android:textSize="11sp" />
 
     <TextView
         android:id="@+id/nav_journal"
@@ -42,7 +48,8 @@
         android:gravity="center"
         android:text="▤\nJournal"
         android:textColor="@color/nav_inactive"
-        android:textSize="10sp" />
+        android:lineSpacingExtra="2dp"
+        android:textSize="11sp" />
 
     <TextView
         android:id="@+id/nav_profile"
@@ -54,5 +61,6 @@
         android:gravity="center"
         android:text="◉\nProfile"
         android:textColor="@color/nav_inactive"
-        android:textSize="10sp" />
+        android:lineSpacingExtra="2dp"
+        android:textSize="11sp" />
 </LinearLayout>

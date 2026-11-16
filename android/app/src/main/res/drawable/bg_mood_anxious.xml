@@ -1,2 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval"><solid android:color="#EAD85A" /></shape>
+<!-- Glossy mood bubble: gradient fill with a soft white ring. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <gradient android:angle="315" android:startColor="#C9C2F5" android:endColor="#A79DE8" />
+    <stroke android:width="3dp" android:color="#CCFFFFFF" />
+</shape>

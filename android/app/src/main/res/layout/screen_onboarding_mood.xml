@@ -48,7 +48,7 @@
             android:focusable="true"
             android:gravity="center"
             android:orientation="vertical">
-            <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_happy" />
+            <TextView android:layout_width="52dp" android:layout_height="52dp" android:background="@drawable/bg_mood_happy" android:gravity="center" android:text="😊" android:textSize="24sp" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Happy" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
         <LinearLayout
@@ -63,7 +63,7 @@
             android:focusable="true"
             android:gravity="center"
             android:orientation="vertical">
-            <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_stressed" />
+            <TextView android:layout_width="52dp" android:layout_height="52dp" android:background="@drawable/bg_mood_stressed" android:gravity="center" android:text="😣" android:textSize="24sp" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Stressed" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
@@ -85,7 +85,7 @@
             android:focusable="true"
             android:gravity="center"
             android:orientation="vertical">
-            <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_calm" />
+            <TextView android:layout_width="52dp" android:layout_height="52dp" android:background="@drawable/bg_mood_calm" android:gravity="center" android:text="😌" android:textSize="24sp" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Calm" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
         <LinearLayout
@@ -100,7 +100,7 @@
             android:focusable="true"
             android:gravity="center"
             android:orientation="vertical">
-            <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_anxious" />
+            <TextView android:layout_width="52dp" android:layout_height="52dp" android:background="@drawable/bg_mood_anxious" android:gravity="center" android:text="😟" android:textSize="24sp" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Anxious" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
@@ -122,7 +122,7 @@
             android:focusable="true"
             android:gravity="center"
             android:orientation="vertical">
-            <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_motivated" />
+            <TextView android:layout_width="52dp" android:layout_height="52dp" android:background="@drawable/bg_mood_motivated" android:gravity="center" android:text="🤩" android:textSize="24sp" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Motivated" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
         <LinearLayout
@@ -137,7 +137,7 @@
             android:focusable="true"
             android:gravity="center"
             android:orientation="vertical">
-            <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_neutral" />
+            <TextView android:layout_width="52dp" android:layout_height="52dp" android:background="@drawable/bg_mood_neutral" android:gravity="center" android:text="😐" android:textSize="24sp" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Neutral" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>

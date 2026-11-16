@@ -2,12 +2,16 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/screen_background"
+    android:background="@drawable/bg_calm_gradient"
+    android:gravity="center_horizontal"
+    android:layoutAnimation="@anim/calm_layout"
     android:orientation="vertical"
     android:paddingStart="28dp"
     android:paddingTop="34dp"
     android:paddingEnd="28dp"
     android:paddingBottom="28dp">
+
+    <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
 
     <TextView
         android:layout_width="match_parent"
@@ -15,7 +19,7 @@
         android:gravity="center"
         android:text="How are you feeling today?"
         android:textColor="@color/ink"
-        android:textSize="24sp"
+        android:textSize="25sp"
         android:textStyle="bold" />
 
     <TextView
@@ -23,9 +27,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="7dp"
         android:gravity="center"
-        android:text="Choose how you feel. Your answer can change anytime."
+        android:text="There is no wrong answer. You can change it anytime."
         android:textColor="@color/muted_ink"
-        android:textSize="13sp" />
+        android:textSize="15sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -35,7 +39,8 @@
         <LinearLayout
             android:id="@+id/onboarding_mood_happy"
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="wrap_content"
+            android:minHeight="104dp"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_outline_card"
@@ -44,12 +49,13 @@
             android:gravity="center"
             android:orientation="vertical">
             <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_happy" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Happy" android:textColor="@color/ink" android:textSize="13sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Happy" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
         <LinearLayout
             android:id="@+id/onboarding_mood_stressed"
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="wrap_content"
+            android:minHeight="104dp"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_outline_card"
@@ -58,7 +64,7 @@
             android:gravity="center"
             android:orientation="vertical">
             <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_stressed" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Stressed" android:textColor="@color/ink" android:textSize="13sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Stressed" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -70,7 +76,8 @@
         <LinearLayout
             android:id="@+id/onboarding_mood_calm"
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="wrap_content"
+            android:minHeight="104dp"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_outline_card"
@@ -79,12 +86,13 @@
             android:gravity="center"
             android:orientation="vertical">
             <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_calm" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Calm" android:textColor="@color/ink" android:textSize="13sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Calm" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
         <LinearLayout
             android:id="@+id/onboarding_mood_anxious"
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="wrap_content"
+            android:minHeight="104dp"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_outline_card"
@@ -93,7 +101,7 @@
             android:gravity="center"
             android:orientation="vertical">
             <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_anxious" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Anxious" android:textColor="@color/ink" android:textSize="13sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Anxious" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -105,7 +113,8 @@
         <LinearLayout
             android:id="@+id/onboarding_mood_motivated"
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="wrap_content"
+            android:minHeight="104dp"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_outline_card"
@@ -114,12 +123,13 @@
             android:gravity="center"
             android:orientation="vertical">
             <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_motivated" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Motivated" android:textColor="@color/ink" android:textSize="13sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Motivated" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
         <LinearLayout
             android:id="@+id/onboarding_mood_neutral"
             android:layout_width="0dp"
-            android:layout_height="92dp"
+            android:layout_height="wrap_content"
+            android:minHeight="104dp"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_outline_card"
@@ -128,7 +138,7 @@
             android:gravity="center"
             android:orientation="vertical">
             <View android:layout_width="35dp" android:layout_height="35dp" android:background="@drawable/bg_mood_neutral" />
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Neutral" android:textColor="@color/ink" android:textSize="13sp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="7dp" android:text="Neutral" android:textColor="@color/ink" android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
 
@@ -156,7 +166,7 @@
     <Button
         android:id="@+id/onboarding_mood_continue"
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="54dp"
         android:background="@drawable/bg_register_button"
         android:text="Continue"
         android:textAllCaps="false"

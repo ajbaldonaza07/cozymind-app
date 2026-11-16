@@ -2,16 +2,16 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/screen_background"
+    android:background="@drawable/bg_calm_gradient"
+    android:gravity="center_horizontal"
+    android:layoutAnimation="@anim/calm_layout"
     android:orientation="vertical"
     android:paddingStart="28dp"
     android:paddingTop="34dp"
     android:paddingEnd="28dp"
     android:paddingBottom="28dp">
 
-    <TextView
-        android:layout_width="1dp"
-        android:layout_height="0dp" />
+    <Space android:layout_width="1dp" android:layout_height="0dp" android:layout_weight="1" />
 
     <TextView
         android:layout_width="match_parent"

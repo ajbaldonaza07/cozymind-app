@@ -3,9 +3,23 @@
     <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
+        <!-- Show the calm cream colour (not white) while the app starts, so opening feels soft. -->
+        <item name="android:windowBackground">@color/screen_background</item>
+        <item name="android:windowAnimationStyle">@style/CalmWindowAnimation</item>
         <item name="android:statusBarColor">@color/screen_background</item>
         <item name="android:navigationBarColor">@color/screen_background</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:colorAccent">@color/register_teal</item>
+    </style>
+
+    <!-- The whole app fades in gently whenever it is opened. -->
+    <style name="CalmWindowAnimation" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/calm_window_enter</item>
+        <item name="android:activityOpenExitAnimation">@anim/calm_window_exit</item>
+        <item name="android:activityCloseEnterAnimation">@anim/calm_window_enter</item>
+        <item name="android:activityCloseExitAnimation">@anim/calm_window_exit</item>
+        <item name="android:taskOpenEnterAnimation">@anim/calm_window_enter</item>
+        <item name="android:taskOpenExitAnimation">@anim/calm_window_exit</item>
+        <item name="android:taskToFrontEnterAnimation">@anim/calm_window_enter</item>
     </style>
 </resources>

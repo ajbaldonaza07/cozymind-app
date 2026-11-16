@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/screen_background"
+    android:background="@drawable/bg_calm_gradient"
     android:fillViewport="true">
 
     <LinearLayout
@@ -13,6 +13,7 @@
         android:layout_marginEnd="28dp"
         android:layout_marginBottom="28dp"
         android:gravity="center_vertical"
+        android:layoutAnimation="@anim/calm_layout"
         android:orientation="vertical">
 
         <TextView
@@ -30,6 +31,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="19dp"
+            android:gravity="center"
             android:text="Create your space"
             android:textColor="@color/ink"
             android:textSize="28sp"
@@ -39,6 +41,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
+            android:gravity="center"
             android:text="A few details help make Cozymind yours."
             android:textColor="@color/muted_ink"
             android:textSize="15sp" />

@@ -12,6 +12,7 @@
         android:layout_marginTop="28dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="24dp"
+        android:layoutAnimation="@anim/calm_layout"
         android:orientation="vertical">
 
         <TextView
@@ -26,7 +27,8 @@
             android:textSize="14sp" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
+            android:gravity="center"
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
             android:text="How are you feeling today?"
@@ -35,7 +37,8 @@
             android:textStyle="bold" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
+            android:gravity="center"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="There is no wrong answer. Choose the feeling that is closest right now."
@@ -118,6 +121,7 @@
         <TextView
             android:id="@+id/mood_statistics_summary"
             android:layout_width="match_parent"
+            android:gravity="center"
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:text="Add at least 3 check-ins within a 6-hour window to see your average."
@@ -125,7 +129,8 @@
             android:textSize="14sp" />
 
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
+            android:gravity="center"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
             android:text="RECENT CHECK-INS"

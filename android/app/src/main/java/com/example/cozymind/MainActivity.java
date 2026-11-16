@@ -239,6 +239,12 @@ public class MainActivity extends Activity {
         findViewById(R.id.toolkit_journal).setOnClickListener(view -> showJournal());
         findViewById(R.id.tool_goals).setOnClickListener(view -> showGoals());
         findViewById(R.id.tool_sleep).setOnClickListener(view -> showSleepLog());
+        findViewById(R.id.tool_sounds).setOnClickListener(view -> openTool(ToolActivity.TOOL_SOUNDS));
+        findViewById(R.id.tool_focus).setOnClickListener(view -> openTool(ToolActivity.TOOL_FOCUS));
+        findViewById(R.id.tool_gratitude).setOnClickListener(view -> openTool(ToolActivity.TOOL_GRATITUDE));
+        findViewById(R.id.tool_reframe).setOnClickListener(view -> openTool(ToolActivity.TOOL_REFRAME));
+        findViewById(R.id.tool_selfcare).setOnClickListener(view -> openTool(ToolActivity.TOOL_SELF_CARE));
+        findViewById(R.id.tool_bodyscan).setOnClickListener(view -> openTool(ToolActivity.TOOL_BODY_SCAN));
         wireBottomNavigation(Screen.TOOLKIT);
     }
 
@@ -995,6 +1001,11 @@ public class MainActivity extends Activity {
     }
 
     // ---------- New wellness helpers ----------
+
+    private void openTool(String tool) {
+        startActivity(ToolActivity.intent(this, tool));
+        overridePendingTransition(R.anim.calm_window_enter, R.anim.calm_window_exit);
+    }
 
     private String timeOfDayGreeting() {
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);

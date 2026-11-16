@@ -26,6 +26,10 @@
             android:name=".MainActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ToolActivity"
+            android:exported="false" />
+
         <!-- Shows the daily reminder and re-schedules it after the phone restarts. -->
         <receiver
             android:name=".ReminderReceiver"
